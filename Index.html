@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lotería PRO - Generador Universal Premium</title>
+  <style>
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #eef2f3; color: #333; margin: 0; padding: 30px 10px; display: flex; flex-direction: column; align-items: center; }
+    .container { background: white; padding: 30px; border-radius: 14px; box-shadow: 0 5px 25px rgba(0,0,0,0.08); max-width: 500px; width: 100%; box-sizing: border-box; }
+    h2 { text-align: center; color: #2c3e50; margin-top: 0; margin-bottom: 5px; }
+    .tagline { text-align: center; color: #7f8c8d; font-size: 13px; margin-bottom: 25px; }
+    .form-group { margin-bottom: 16px; display: flex; flex-direction: column; }
+    label { font-weight: 600; margin-bottom: 6px; color: #4a5568; font-size: 14px; }
+    input, select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #f8fafc; outline: none; transition: border 0.2s; }
+    input:focus, select:focus { border-color: #3b82f6; background: #fff; }
+    .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
+    button { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+    button:hover { background: #2563eb; }
+    .aviso { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 15px; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+    .hidden { display: none !important; }
+
+    /* Estilos del Panel de Posicionamiento Premium */
+    .panel-fijas { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 16px; }
+    .grid-interactivo { display: grid; gap: 5px; margin-top: 10px; justify-content: center; background: #e2e8f0; padding: 8px; border-radius: 6px; }
+    .celda-interactiva { width: 60px; height: 60px; background: white; border: 2px dashed #cbd5e1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; font-weight: bold; color: #64748b; transition: all 0.2s; text-align: center; padding: 2px; box-sizing: border-box; }
+    .celda-interactiva:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+    .celda-interactiva.fijada { border-style: solid; border-color: #10b981; background: #ecfdf5; color: #065f46; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🎲 Lotería PRO</h2>
+  <div class="tagline">Generador comercial con posicionamiento inteligente</div>
+
+  <div class="form-group">
+    <label>¿Qué tipo de lotería deseas buscar?</label>
+    <select id="modalidad" onchange="cambiarModalidad()">
+      <option value="oficial" selected>Lotería Oficial Tradicional</option>
+      <option value="pocito">Lotería de Pocitos (Variante)</option>
+      <option value="plantilla">Láminas de Baraja (54 Cartas en orden)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label id="lblCantidad">Cantidad de tablas (Máx. 100):</label>
+    <input type="number" id="cantidad" value="10" min="1" max="100">
+  </div>
+
+  <div class="form-group">
+    <label id="lblAncho">Ancho deseado por pieza (cm):</label>
+    <input type="number" id="anchoCm" value="6" step="0.1">
+  </div>
+
+  <div class="form-group">
+    <label id="lblAlto">Alto deseado por pieza (cm):</label>
+    <input type="number" id="altoCm" value="6" step="0.1">
+  </div>
+
+  <div class="form-group" id="grupoEspacio">
+    <label>Separación externa entre tablas (cm):</label>
+    <input type="number" id="espacioCm" value="0.5" step="0.1">
+  </div>
+
+  <div id="opcionesOficial">
+    <div class="form-group">
+      <label>Tamaño de la cuadrícula:</label>
+      <select id="tamano" onchange="renderizarGridInteractivo()">
+        <option value="3">3x3</option>
+        <option value="4" selected>4x4 (Tradicional)</option>
+        <option value="5">5x5</option>
+        <option value="6">6x6</option>
+      </select>
+    </div>
+
+    <div class="panel-fijas">
+      <label>🎯 Fijar Cartas en la Tabla (Opcional, Máx. 10):</label>
+      <p style="font-size: 11px; color:#64748b; margin: 4px 0 10px 0;">Haz clic en una celda para clavar una carta obligatoria en esa posición.</p>
+      <div id="gridInteractivo" class="grid-interactivo"></div>
+      <button type="button" onclick="limpiarCartasFijas()" style="background:#ef4444; padding:6px; font-size:12px; margin-top:8px;">Limpiar cartas fijas</button>
+    </div>
+
+    <div class="form-group">
+      <label>Forma de las celdas:</label>
+      <select id="forma">
+        <option value="cuadrado" selected>Cuadrado</option>
+        <option value="circulo">Círculo</option>
+        <option value="rectangulo">Rectángulo vertical</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="opcionesPlantilla" class="hidden">
+    <div class="form-group">
+      <label>Distribución interna de la lámina:</label>
+      <select id="grid">
+        <option value="9x6" selected>9 x 6 (Predeterminado)</option>
+        <option value="6x9">6 x 9</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Estilo de fondo de la hoja:</label>
+    <select id="fondo">
+      <option value="blanco" selected>Blanco limpio</option>
+      <option value="gris">Gris técnico</option>
+      <option value="negro">Negro oscuro</option>
+      <option value="rojo">Rojo mexicano</option>
+      <option value="azul">Azul profundo</option>
+      <option value="neon">Efecto Neón</option>
+      <option value="textura">Textura Vintage</option>
+    </select>
+  </div>
+
+  <div class="checkbox-group" id="grupoBorde">
+    <input type="checkbox" id="borde" checked>
+    <label for="borde" style="cursor:pointer; font-weight:600; font-size:14px;">Dibujar contornos de corte</label>
+  </div>
+
+  <button onclick="procesarSistemaComercial()">Procesar y Descargar PDF</button>
+  <p class="aviso">Uso comercial público limitado de manera estricta a un máximo de 100 piezas por ejecución.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
