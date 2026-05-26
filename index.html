@@ -14,17 +14,25 @@
       --rosa-mexicano: #e61c5d; /* El alma de la feria */
       --azul-talavera: #0f4c81; /* Azul rey profundo de artesano */
       --verde-nopal: #1e5631;   /* Verde de los marcos clásicos */
-      --text-dark: #2d241e;     /* Café oscuro para el texto, nada de gris frío */
+      --text-dark: #2d241e;     /* Café oscuro para el texto */
       --text-muted: #7d6e65;
       --borde-tablero: #dfcaa7;
     }
 
     body {
       font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-      background-color: var(--bg-warm);
-      /* Patrón sutil que emula la textura del papel o artesanía mexicana */
-      background-image: radial-gradient(var(--borde-tablero) 1px, transparent 0);
-      background-size: 24px 24px;
+      background-color: var(--bg-warm); 
+      
+      /* 🇲🇽 PATRÓN DE PAPEL PICADO: Genera texturas folclóricas sutiles en la web */
+      background-image: 
+        radial-gradient(circle at 50% 50%, #dfcaa7 1px, transparent 1px),
+        radial-gradient(circle at 0 0, #dfcaa7 2px, transparent 2px),
+        radial-gradient(circle at 100% 0, #dfcaa7 2px, transparent 2px),
+        radial-gradient(circle at 100% 100%, #dfcaa7 2px, transparent 2px),
+        radial-gradient(circle at 0 100%, #dfcaa7 2px, transparent 2px);
+      background-size: 40px 40px;
+      background-position: 0 0, 0 0, 40px 0, 40px 40px, 0 40px;
+      
       color: var(--text-dark);
       margin: 0;
       padding: 40px 20px;
@@ -38,7 +46,7 @@
     /* Contenedor principal que simula un gran Tablero de Lotería */
     .container {
       background: #ffffff;
-      border: 6px double var(--rosa-mexicano); /* El clásico borde doble de las barajas */
+      border: 6px double var(--rosa-mexicano); /* El clásico borde doble */
       outline: 2px solid var(--azul-talavera);
       padding: 40px;
       border-radius: 16px;
@@ -49,7 +57,7 @@
       position: relative;
     }
 
-    /* Decoraciones en las esquinas inspiradas en juegos de mesa antiguos */
+    /* Decoraciones en las esquinas */
     .container::before {
       content: "🇲🇽";
       position: absolute;
@@ -96,7 +104,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Inputs y Selectores limpios con marcos tradicionales */
     input, select {
       padding: 12px 16px;
       border: 2px solid var(--borde-tablero);
@@ -128,7 +135,7 @@
       accent-color: var(--rosa-mexicano);
     }
 
-    /* 🎯 EL BOTÓN CON TODA LA VIBRA DE FERIA */
+    /* Botón estilo Feria */
     .btn-pagar {
       width: 100%;
       padding: 18px;
@@ -143,7 +150,7 @@
       transition: all 0.2s ease;
       margin-top: 20px;
       letter-spacing: 1px;
-      border-bottom: 5px solid #b30f42; /* Efecto 3D de botón de feria */
+      border-bottom: 5px solid #b30f42; /* Efecto 3D */
       box-shadow: 0 6px 15px rgba(230, 28, 93, 0.3);
     }
 
@@ -162,7 +169,7 @@
       display: none !important;
     }
 
-    /* Panel de Cartas Fijas que simula un sub-tablero artesanal */
+    /* Panel de Cartas Fijas */
     .panel-fijas {
       background: var(--bg-warm);
       border: 2px dashed var(--azul-talavera);
@@ -182,7 +189,6 @@
       border-radius: 8px;
     }
 
-    /* Celdas que imitan pequeñas mini-cartas en blanco */
     .celda-interactiva {
       width: 62px;
       height: 62px;
@@ -255,12 +261,12 @@
 
   <div class="form-group">
     <label id="lblAncho">Ancho total del tablero (cm):</label>
-    <input type="number" id="anchoCm" value="16" step="0.1">
+    <input type="number" id="anchoCm" value="14" step="0.1">
   </div>
 
   <div class="form-group">
     <label id="lblAlto">Alto total del tablero (cm):</label>
-    <input type="number" id="altoCm" value="22" step="0.1">
+    <input type="number" id="altoCm" value="20" step="0.1">
   </div>
 
   <div class="form-group" id="grupoEspacio">
@@ -306,7 +312,7 @@
   </div>
 
   <div class="form-group">
-    <label>Estilo de fondo de la hoja:</label>
+    <label>Estilo de fondo de la hoja (PDF):</label>
     <select id="fondo">
       <option value="blanco" selected>Blanco limpio</option>
       <option value="gris">Gris técnico</option>
@@ -321,7 +327,6 @@
     <label for="borde" style="cursor:pointer;">Dibujar contornos de corte</label>
   </div>
 
-  <!-- ¡GRITO DE CARTÓN TRADICIONAL! -->
   <button class="btn-pagar" onclick="ejecutarGeneracionDirecta()">🎉 ¡Generar Buenas Tablas! 🎉</button>
 </div>
 
