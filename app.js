@@ -312,24 +312,100 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
 // 🚀 MOTORES 2 Y 3 (PERMANECEN IGUALES PARA VELOCIDAD DE PROCESAMIENTO)
 // ==========================================
 function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fondo) {
-  const margenMinimo = 6; const layout = calcularEstrategiaImpresion(anchoPocito, altoPocito, espacioTab, margenMinimo);
+  const margenMinimo = 6; 
+  const layout = calcularEstrategiaImpresion(anchoPocito, altoPocito, espacioTab, margenMinimo);
   if (layout.totalHoja === 0) return alert("Medidas muy grandes.");
-  const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); let contador = 0;
+  
+  const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
+  let contador = 0;
+  
   for (let p = 0; p < cantidad; p++) {
-    if (contador % layout.totalHoja === 0) { if (contador > 0) doc.addPage(); aplicarFondoHoja(doc, fondo); }
-    let pos = contador % layout.totalHoja; let r = Math.floor(pos / layout.cols); let c = pos % layout.cols;
-    let anchoBloqueTotal = layout.cols * anchoPocito + (layout.cols - 1) * espacioTab; let altoBloqueTotal = layout.rows * altoPocito + (layout.rows - 1) * espacioTab;
-    let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoPocito + espacioTab); let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoPocito + espacioTab);
-    let baraja = mezclarMatriz([...bancoImagenes]); let grandes = baraja.slice(0, 30); let dobles = baraja.slice(30, 42); let triples = baraja.slice(42, 54);
-    let pequenias = []; dobles.forEach(img => pequenias.push(img, img)); triples.forEach(img => pequenias.push(img, img, img)); mezclarMatriz(pequenias);
+    if (contador % layout.totalHoja === 0) { 
+      if (contador > 0) doc.addPage(); 
+      aplicarFondoHoja(doc, fondo); 
+    }
+    
+    let pos = contador % layout.totalHoja; 
+    let r = Math.floor(pos / layout.cols); 
+    let c = pos % layout.cols;
+    
+    let anchoBloqueTotal = layout.cols * anchoPocito + (layout.cols - 1) * espacioTab; 
+    let altoBloqueTotal = layout.rows * altoPocito + (layout.rows - 1) * espacioTab;
+    
+    let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoPocito + espacioTab); 
+    let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoPocito + espacioTab);
+    
+    // 1. Separación matemática estricta de la baraja para este pocito
+    let baraja = mezclarMatriz([...bancoImagenes]); 
+    let grandes = baraja.slice(0, 30);      // 30 cartas que irán en formato grande
+    let dobles = baraja.slice(30, 42);     // 12 cartas que se repetirán 2 veces
+    let triples = baraja.slice(42, 54);    // 12 cartas que se repetirán 3 veces
+    
+    // 2. Construcción del pool de cartas pequeñas (Total: 60 cartas)
+    let pequenias = []; 
+    dobles.forEach(img => pequenias.push(img, img)); 
+    triples.forEach(img => pequenias.push(img, img, img)); 
+    
+    // 3. Algoritmo de distribución balanceada sin bloqueos (Garantiza desorden único)
     let bloques = Array.from({ length: 30 }, () => []);
-    for (let img of pequenias) { let colocado = false; let limit = 0; while (!colocado && limit < 150) { let idx = Math.floor(Math.random() * 30); if (bloques[idx].length < 2 && !bloques[idx].includes(img) && !grandes[idx] === img) { bloques[idx].push(img); colocado = true; } limit++; } }
-    let cPocito = 5, rPocito = 6; let bW = anchoPocito / cPocito; let bH = altoPocito / rPocito;
+    let intentosDistribucion = 0;
+    let exito = false;
+
+    while (!exito && intentosDistribucion < 10) {
+      // Reiniciamos los bloques para un nuevo intento limpio si se llega a trabar
+      for (let b = 0; b < 30; b++) bloques[b] = [];
+      let poolCopia = mezclarMatriz([...pequenias]);
+      exito = true;
+
+      for (let img of poolCopia) {
+        let acomodado = false;
+        // Buscamos un bloque que tenga espacio y cumpla las reglas de los Pocitos
+        for (let b = 0; b < 30; b++) {
+          if (bloques[b].length < 2 && grandes[b] !== img && !bloques[b].includes(img)) {
+            bloques[b].push(img);
+            acomodado = true;
+            break;
+          }
+        }
+        // Si una carta no cupo en ningún lado por colisión de reglas, repetimos la mezcla completa
+        if (!acomodado) {
+          exito = false;
+          break;
+        }
+      }
+      intentosDistribucion++;
+    }
+
+    // 4. Renderizado e impresión en el lienzo del PDF
+    let cPocito = 5, rPocito = 6; 
+    let bW = anchoPocito / cPocito; 
+    let bH = altoPocito / rPocito;
+    
     for (let i = 0; i < 30; i++) {
-      let colCell = i % cPocito; let rowCell = Math.floor(i / cPocito); let x = ox + colCell * bW; let y = oy + rowCell * bH;
-      let gImg = grandes[i]; let pImg1 = bloques[i][0] || baraja[0]; let pImg2 = bloques[i][1] || baraja[1];
-      let wG = bW * 0.72; let wP = bW * 0.28; let hP = bH / 2; doc.addImage(gImg, "JPEG", x, y, wG, bH); doc.addImage(pImg1, "JPEG", x + wG, y, wP, hP); doc.addImage(pImg2, "JPEG", x + wG, y + hP, wP, hP);
-      doc.setDrawColor(140); doc.setLineWidth(0.15); doc.rect(x, y, bW, bH, "S");
+      let colCell = i % cPocito; 
+      let rowCell = Math.floor(i / cPocito); 
+      let x = ox + colCell * bW; 
+      let y = oy + rowCell * bH;
+      
+      let gImg = grandes[i]; 
+      // Si por una extrema casualidad matemática fallara la distribución, usamos cartas de respaldo seguras
+      let pImg1 = bloques[i][0] || baraja[(i + 1) % 54]; 
+      let pImg2 = bloques[i][1] || baraja[(i + 2) % 54];
+      
+      let wG = bW * 0.72; 
+      let wP = bW * 0.28; 
+      let hP = bH / 2; 
+      
+      // Dibujar la carta grande del bloque
+      doc.addImage(gImg, "JPEG", x, y, wG, bH); 
+      // Dibujar las dos cartas pequeñas de la esquina (Pocitos)
+      doc.addImage(pImg1, "JPEG", x + wG, y, wP, hP); 
+      doc.addImage(pImg2, "JPEG", x + wG, y + hP, wP, hP);
+      
+      // Marco de corte/separación técnica
+      doc.setDrawColor(140); 
+      doc.setLineWidth(0.15); 
+      doc.rect(x, y, bW, bH, "S");
     }
     contador++;
   }
