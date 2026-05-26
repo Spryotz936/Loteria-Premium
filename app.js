@@ -240,6 +240,9 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoPocito + espacioTab); 
     let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoPocito + espacioTab);
     
+    // Si por alguna razón el margen se descalibra, forzamos números reales
+    if (isNaN(ox) || isNaN(oy)) { ox = margenMinimo; oy = margenMinimo; }
+    
     let baraja = mezclarMatriz([...bancoImagenes]); 
     let grandes = baraja.slice(0, 30);      
     let dobles = baraja.slice(30, 42);     
@@ -253,7 +256,7 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     let intentosDistribucion = 0;
     let exito = false;
 
-    while (!exito && intentosDistribucion < 10) {
+    while (!exito && intentosDistribucion < 15) { // Subimos a 15 intentos para dar más holgura
       for (let b = 0; b < 30; b++) bloques[b] = [];
       let poolCopia = mezclarMatriz([...pequenias]);
       exito = true;
@@ -282,10 +285,12 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     for (let i = 0; i < 30; i++) {
       let colCell = i % cPocito; 
       let rowCell = Math.floor(i / cPocito); 
-      let x = ox + colCell * bW; 
-      let y = oy + rowCell * bH;
       
-      let gImg = grandes[i]; 
+      // 🎯 PROTECCIÓN MATEMÁTICA: Asegurar que las coordenadas de cada celda sean 100% reales
+      let x = Number(ox + colCell * bW) || margenMinimo; 
+      let y = Number(oy + rowCell * bH) || margenMinimo;
+      
+      let gImg = grandes[i] || bancoImagenes[0]; 
       let pImg1 = bloques[i][0] || baraja[(i + 1) % 54]; 
       let pImg2 = bloques[i][1] || baraja[(i + 2) % 54];
       
@@ -293,6 +298,7 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
       let wP = bW * 0.28; 
       let hP = bH / 2; 
       
+      // Dibujamos verificando que no existan coordenadas rotas
       doc.addImage(gImg, "JPEG", x, y, wG, bH); 
       doc.addImage(pImg1, "JPEG", x + wG, y, wP, hP); 
       doc.addImage(pImg2, "JPEG", x + wG, y + hP, wP, hP);
