@@ -39,78 +39,77 @@ function ejecutarGeneracionDirecta() {
 }
 
 /**
- * INTERRUPTOR DE VISTAS EN EL HTML
+ * INTERRUPTOR DE VISTAS EN EL HTML (Control Total de Interfaces por Modalidad)
  */
 function cambiarModalidad() {
   const mod = document.getElementById("modalidad").value;
-  const opcOficial = document.getElementById("opcionesOficial");
-  const opcPlantilla = document.getElementById("opcionesPlantilla");
-  const grupoEspacio = document.getElementById("grupoEspacio");
+  
+  // 1. CAPTURA DE PANELES DE CONFIGURACIÓN
+  const opcOficial = document.getElementById("opcionesOficial");     // Configuración Tradicional (Tamaño 3x3/4x4/5x5, forma de celda y Grid interactivo)
+  const opcPlantilla = document.getElementById("opcionesPlantilla"); // Configuración de Láminas (Selector 6x9 o 9x6)
+
+  // 2. CAPTURA DE PARAMETROS FÍSICOS DEL PDF (Medidas y Estructura)
+  const grupoAncho = document.getElementById("anchoCm")?.closest('.grupo-control') || document.getElementById("anchoCm");
+  const grupoAlto = document.getElementById("altoCm")?.closest('.grupo-control') || document.getElementById("altoCm");
+  const grupoEspacio = document.getElementById("grupoEspacio") || document.getElementById("espacioCm");
   const grupoBorde = document.getElementById("grupoBorde");
+  const grupoFondo = document.getElementById("fondo")?.closest('.grupo-control') || document.getElementById("fondo");
   const lblCant = document.getElementById("lblCantidad");
 
+  // ==========================================
+  // CASO A: MODALIDAD LÁMINAS / PLANTILLAS
+  // ==========================================
   if (mod === "plantilla") {
+    // Visibilidad de Paneles Principales
     opcOficial.classList.add("hidden");
-    opcPlantilla.classList.remove("hidden");
-    grupoEspacio.classList.add("hidden");
-    grupoBorde.classList.add("hidden");
+    opcPlantilla.classList.remove("hidden"); // Muestra selector de distribución 6x9 o 9x6
+    
+    // Control de Medidas y Estructura Técnica
+    if(grupoAncho) grupoAncho.classList.remove("hidden");   // Mantiene Medida Ancho
+    if(grupoAlto) grupoAlto.classList.remove("hidden");     // Mantiene Medida Alto
+    if(grupoFondo) grupoFondo.classList.remove("hidden");   // Mantiene Color de Fondo de la hoja
+    if(grupoEspacio) grupoEspacio.classList.add("hidden");   // OCULTA espacio entre tablas (es una sola lámina grande)
+    if(grupoBorde) grupoBorde.classList.add("hidden");       // OCULTA checkbox de borde grueso tradicional
+    
     lblCant.innerText = "Cantidad de láminas a generar:";
-  } else {
-    opcOficial.classList.remove("hidden");
+  } 
+  
+  // ==========================================
+  // CASO B: MODALIDAD POCITOS (Fijo 4x4, sin personalización manual)
+  // ==========================================
+  else if (mod === "pocito") {
+    // Visibilidad de Paneles Principales
+    opcOficial.classList.add("hidden");   // OCULTA Grid interactivo, Tamaño de matriz (fuerza 4x4) y formas circulares
+    opcPlantilla.classList.add("hidden"); // OCULTA selector de distribución de láminas
+    
+    // Control de Medidas y Estructura Técnica (Aquí se queda TODO lo de impresión)
+    if(grupoAncho) grupoAncho.classList.remove("hidden");     // MANTIENE visible cambiar Ancho
+    if(grupoAlto) grupoAlto.classList.remove("hidden");       // MANTIENE visible cambiar Alto
+    if(grupoEspacio) grupoEspacio.classList.remove("hidden"); // MANTIENE separación entre tablas (gap)
+    if(grupoFondo) grupoFondo.classList.remove("hidden");     // MANTIENE selector de color de fondo
+    if(grupoBorde) grupoBorde.classList.remove("hidden");     // MANTIENE checkbox de contorno negro exterior
+    
+    lblCant.innerText = "Cantidad de tablas de Pocitos:";
+  } 
+  
+  // ==========================================
+  // CASO C: MODALIDAD LOTERÍA OFICIAL TRADICIONAL
+  // ==========================================
+  else {
+    // Visibilidad de Paneles Principales
+    opcOficial.classList.remove("hidden"); // MUESTRA personalización total (Tamaños, Formas y Grid interactivo)
     opcPlantilla.classList.add("hidden");
-    grupoEspacio.classList.remove("hidden");
-    grupoBorde.classList.remove("hidden");
+    
+    // Control de Medidas y Estructura Técnica (Habilitado Completo)
+    if(grupoAncho) grupoAncho.classList.remove("hidden");
+    if(grupoAlto) groupAlto.classList.remove("hidden");
+    if(grupoEspacio) grupoEspacio.classList.remove("hidden");
+    if(grupoFondo) grupoFondo.classList.remove("hidden");
+    if(grupoBorde) grupoBorde.classList.remove("hidden");
+    
     lblCant.innerText = "Cantidad de tablas / bloques:";
   }
 }
-
-/**
- * ASISTENTE DE PALETA DE COLORES PARA EL PDF
- */
-function obtenerColorInyeccion(nombreColor) {
-  const paleta = {
-    blanco: [255, 255, 255],
-    gris: [240, 240, 240],
-    negro: [25, 25, 25],
-    rojo: [186, 12, 47],
-    azul: [15, 76, 129]
-  };
-  return paleta[nombreColor] || [255, 255, 255];
-}
-
-/**
- * 1. MOTOR OFICIAL TRADICIONAL (Cuadrículas configurables con inserción fija)
- */
-function generarMotorOficial(cantidad, tW, tH, gap, colorFondo) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "mm", "letter");
-  
-  const dimTamano = parseInt(document.getElementById("tamano").value) || 4;
-  const formaCelda = document.getElementById("forma").value;
-  const dibujaBorde = document.getElementById("borde").checked;
-  const rgb = obtenerColorInyeccion(colorFondo);
-
-  // Dimensiones de la hoja Carta en mm
-  const pW = 215.9;
-  const pH = 279.4;
-
-  let xCursor = gap;
-  let yCursor = gap;
-
-  for (let i = 0; i < cantidad; i++) {
-    if (i > 0) {
-      if (xCursor + tW + gap <= pW && yCursor + tH + gap <= pH) {
-        // Cabe en la misma página
-      } else if (xCursor === gap && yCursor + (tH * 2) + (gap * 2) <= pH) {
-        xCursor = gap;
-        yCursor += tH + gap;
-      } else {
-        doc.addPage();
-        xCursor = gap;
-        yCursor = gap;
-      }
-    }
-
     // Fondo del tablero
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
     doc.rect(xCursor, yCursor, tW, tH, "F");
