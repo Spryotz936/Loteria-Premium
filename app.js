@@ -4,44 +4,50 @@
 const TOTAL_IMAGENES = 54;
 const { jsPDF } = window.jspdf;
 
-// Generar array de imágenes simuladas (banco de assets)
+// Generar array de imágenes simuladas (banco de assets base)
 const bancoImagenes = Array.from({ length: TOTAL_IMAGENES }, (_, i) => {
   const canvas = document.createElement('canvas');
   canvas.width = 120; canvas.height = 180;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = `hsl(${(i * 360) / TOTAL_IMAGENES}, 75%, 85%)`;
+  
+  ctx.fillStyle = '#fffdf0';
   ctx.fillRect(0, 0, 120, 180);
-  ctx.fillStyle = '#000'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+  
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = `hsl(${(i * 360) / TOTAL_IMAGENES}, 70%, 50%)`;
+  ctx.strokeRect(5, 5, 110, 170);
+
+  ctx.fillStyle = '#333'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(`${i + 1}`, 60, 95);
+  ctx.font = 'normal 10px sans-serif';
+  ctx.fillText('CARTA', 60, 110);
+  
   return canvas.toDataURL('image/jpeg', 0.8);
 });
 
 let cartasFijas = {}; // Almacena { posicion_index: imagen_url }
 
-// Inicialización
 window.onload = () => {
   renderizarGridInteractivo();
 };
 
-// Control de vistas en el panel
 function cambiarModalidad() {
   const mod = document.getElementById("modalidad").value;
   document.getElementById("opcionesOficial").classList.toggle("hidden", mod !== "oficial");
   document.getElementById("opcionesPlantilla").classList.toggle("hidden", mod !== "plantilla");
   
   if (mod === "pocito") {
-    document.getElementById("anchoCm").value = 18;
-    document.getElementById("altoCm").value = 24;
+    document.getElementById("anchoCm").value = 16;
+    document.getElementById("altoCm").value = 22;
   } else if (mod === "plantilla") {
     document.getElementById("anchoCm").value = 20;
     document.getElementById("altoCm").value = 26;
   } else {
-    document.getElementById("anchoCm").value = 16;
-    document.getElementById("altoCm").value = 22;
+    document.getElementById("anchoCm").value = 14;
+    document.getElementById("altoCm").value = 20;
   }
 }
 
-// Utilería para mezclar vectores de forma aleatoria
 function mezclarMatriz(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -56,6 +62,7 @@ function mezclarMatriz(array) {
 function renderizarGridInteractivo() {
   const tam = parseInt(document.getElementById("tamano").value);
   const grid = document.getElementById("gridInteractivo");
+  if(!grid) return;
   grid.style.gridTemplateColumns = `repeat(${tam}, 1fr)`;
   grid.innerHTML = "";
   cartasFijas = {};
@@ -75,8 +82,8 @@ function toggleraCartaFija(elemento, idx) {
     elemento.innerText = `Pos ${idx + 1}`;
     delete cartasFijas[idx];
   } else {
-    if (Object.keys(cartasFijas).length >= 10) return alert("Máximo de 10 cartas fijas por tabla.");
-    const numImg = prompt(`Ingresa el número de carta (1 al ${TOTAL_IMAGENES}) para clavar aquí:`);
+    if (Object.keys(cartasFijas).length >= 10) return alert("Máximo de 10 cartas fijas.");
+    const numImg = prompt(`Carta (1 al ${TOTAL_IMAGENES}):`);
     const n = parseInt(numImg);
     if (n >= 1 && n <= TOTAL_IMAGENES) {
       elemento.classList.add("fijada");
@@ -91,10 +98,10 @@ function limpiarCartasFijas() {
 }
 
 // ==========================================
-// 📐 CALCULADOR DE ESTRATEGIA DE IMPRESIÓN
+// 📐 CALCULADOR DE IMPRESIÓN CON SALVAVIDAS
 // ==========================================
 function calcularEstrategiaImpresion(wPieza, hPieza, gap, margen) {
-  const papelW_Port = 215.9, papelH_Port = 279.4; // Carta estándar en mm
+  const papelW_Port = 215.9, papelH_Port = 279.4; 
   
   function evaluar(pW, pH, orient) {
     let cols = Math.floor((pW - (margen * 2) + gap) / (wPieza + gap));
@@ -106,7 +113,12 @@ function calcularEstrategiaImpresion(wPieza, hPieza, gap, margen) {
   let vertical = evaluar(papelW_Port, papelH_Port, "portrait");
   let horizontal = evaluar(papelH_Port, papelW_Port, "landscape");
 
-  return (vertical.total >= horizontal.total && vertical.total > 0) ? vertical : horizontal;
+  // 🎯 SALVAVIDAS MATEMÁTICO: Evita coordenadas muertas o archivos vacíos
+  if (vertical.total === 0 && horizontal.total === 0) {
+    return { total: 1, cols: 1, rows: 1, pageW: papelW_Port, pageH: papelH_Port, orient: "portrait" };
+  }
+
+  return (vertical.total >= horizontal.total) ? vertical : horizontal;
 }
 
 function aplicarFondoHoja(doc, tipo) {
@@ -123,14 +135,15 @@ function aplicarFondoHoja(doc, tipo) {
 }
 
 // ==========================================
-// 🚀 DISPARADOR DIRECTO DE ACCIONES
+// 🚀 DISPARADOR PRINCIPAL
 // ==========================================
 function ejecutarGeneracionDirecta() {
   const mod = document.getElementById("modalidad").value;
   const cant = parseInt(document.getElementById("cantidad").value) || 1;
-  const w = parseFloat(document.getElementById("anchoCm").value) * 10;
-  const h = parseFloat(document.getElementById("altoCm").value) * 10;
-  const gap = parseFloat(document.getElementById("espacioCm").value) * 10 || 0;
+  
+  const w = Number(document.getElementById("anchoCm").value) * 10 || 140;
+  const h = Number(document.getElementById("altoCm").value) * 10 || 200;
+  const gap = Number(document.getElementById("espacioCm").value) * 10 || 0;
   const fondo = document.getElementById("fondo").value;
 
   if (mod === "oficial") {
@@ -143,7 +156,7 @@ function ejecutarGeneracionDirecta() {
 }
 
 // ==========================================
-// 🎰 MOTOR 1: LOTERÍA TRADICIONAL OFICIAL
+// 🎰 MOTOR 1: TRADICIONAL OFICIAL
 // ==========================================
 function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
   const tam = parseInt(document.getElementById("tamano").value);
@@ -152,8 +165,6 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
   const margenMinimo = 6;
 
   const layout = calcularEstrategiaImpresion(anchoTab, altoTab, espacioTab, margenMinimo);
-  if (layout.totalHoja === 0) return alert("Las dimensiones no caben en el papel.");
-
   const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" });
   let contador = 0;
 
@@ -173,7 +184,6 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
     let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoTab + espacioTab);
     let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoTab + espacioTab);
 
-    // Preparar el pool de imágenes barajadas excluyendo las fijas
     let poolDisponibles = [...bancoImagenes];
     Object.values(cartasFijas).forEach(img => {
       let idx = poolDisponibles.indexOf(img);
@@ -187,10 +197,11 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
     for (let i = 0; i < tam * tam; i++) {
       let cellC = i % tam;
       let cellR = Math.floor(i / tam);
-      let x = ox + cellC * cW;
-      let y = oy + cellR * cH;
+      
+      let x = Number(ox + cellC * cW) || margenMinimo;
+      let y = Number(oy + cellR * cH) || margenMinimo;
 
-      let img = cartasFijas[i] || poolDisponibles.pop();
+      let img = cartasFijas[i] || poolDisponibles.pop() || bancoImagenes[0];
 
       if (forma === "circulo") {
         doc.saveGraphicsState();
@@ -204,7 +215,7 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
       }
 
       if (dibujarBorde) {
-        doc.setDrawColor(150); doc.setLineWidth(0.15);
+        doc.setDrawColor(180); doc.setLineWidth(0.15);
         doc.rect(x, y, cW, cH, "S");
       }
     }
@@ -214,13 +225,11 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
 }
 
 // ==========================================
-// 🎰 MOTOR 2: DE POCITOS (REPARTO GARANTIZADO)
+// 🎰 MOTOR 2: POCITOS (PROTEGIDO)
 // ==========================================
 function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fondo) {
   const margenMinimo = 6; 
   const layout = calcularEstrategiaImpresion(anchoPocito, altoPocito, espacioTab, margenMinimo);
-  if (layout.totalHoja === 0) return alert("Medidas muy grandes.");
-  
   const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
   let contador = 0;
   
@@ -240,9 +249,6 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoPocito + espacioTab); 
     let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoPocito + espacioTab);
     
-    // Si por alguna razón el margen se descalibra, forzamos números reales
-    if (isNaN(ox) || isNaN(oy)) { ox = margenMinimo; oy = margenMinimo; }
-    
     let baraja = mezclarMatriz([...bancoImagenes]); 
     let grandes = baraja.slice(0, 30);      
     let dobles = baraja.slice(30, 42);     
@@ -256,7 +262,7 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     let intentosDistribucion = 0;
     let exito = false;
 
-    while (!exito && intentosDistribucion < 15) { // Subimos a 15 intentos para dar más holgura
+    while (!exito && intentosDistribucion < 15) {
       for (let b = 0; b < 30; b++) bloques[b] = [];
       let poolCopia = mezclarMatriz([...pequenias]);
       exito = true;
@@ -270,10 +276,7 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
             break;
           }
         }
-        if (!acomodado) {
-          exito = false;
-          break;
-        }
+        if (!acomodado) { exito = false; break; }
       }
       intentosDistribucion++;
     }
@@ -286,7 +289,6 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
       let colCell = i % cPocito; 
       let rowCell = Math.floor(i / cPocito); 
       
-      // 🎯 PROTECCIÓN MATEMÁTICA: Asegurar que las coordenadas de cada celda sean 100% reales
       let x = Number(ox + colCell * bW) || margenMinimo; 
       let y = Number(oy + rowCell * bH) || margenMinimo;
       
@@ -298,12 +300,11 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
       let wP = bW * 0.28; 
       let hP = bH / 2; 
       
-      // Dibujamos verificando que no existan coordenadas rotas
       doc.addImage(gImg, "JPEG", x, y, wG, bH); 
       doc.addImage(pImg1, "JPEG", x + wG, y, wP, hP); 
       doc.addImage(pImg2, "JPEG", x + wG, y + hP, wP, hP);
       
-      doc.setDrawColor(140); 
+      doc.setDrawColor(180); 
       doc.setLineWidth(0.15); 
       doc.rect(x, y, bW, bH, "S");
     }
@@ -313,7 +314,7 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
 }
 
 // ==========================================
-// 🎰 MOTOR 3: LÁMINAS COMPLETAS CORREGIDO
+// 🎰 MOTOR 3: LÁMINAS COMPLETAS
 // ==========================================
 function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
   const gridType = document.getElementById("grid").value; 
@@ -324,8 +325,6 @@ function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
   const sep = 6; 
   
   const layout = calcularEstrategiaImpresion(anchoLam, altoLam, sep, margen); 
-  if (layout.totalHoja === 0) return alert("Las dimensiones superan el papel.");
-  
   const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
   let actual = 0;
   
@@ -344,8 +343,8 @@ function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
       let cH = i % layout.cols;          
       let rH = Math.floor(i / layout.cols); 
       
-      let bx = kx + cH * (anchoLam + sep); 
-      let by = ky + rH * (altoLam + sep); 
+      let bx = Number(kx + cH * (anchoLam + sep)) || margen; 
+      let by = Number(ky + rH * (altoLam + sep)) || margen; 
       
       let cW = anchoLam / colsGrid; 
       let hC = altoLam / rowsGrid; 
