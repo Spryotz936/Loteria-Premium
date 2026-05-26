@@ -413,23 +413,68 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
 }
 
 function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
-  const gridType = document.getElementById("grid").value; let colsGrid = (gridType === "9x6") ? 9 : 6; let rowsGrid = (gridType === "9x6") ? 6 : 9;
-  const margen = 4, sep = 6; const layout = calcularEstrategiaImpresion(anchoLam, altoLam, sep, margen); if (layout.totalHoja === 0) return alert("Medidas muy grandes.");
-  const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); let actual = 0;
+  const gridType = document.getElementById("grid").value; 
+  let colsGrid = (gridType === "9x6") ? 9 : 6; 
+  let rowsGrid = (gridType === "9x6") ? 6 : 9;
+  
+  const margen = 4;
+  const sep = 6; 
+  
+  // Calculamos cuántas láminas completas caben por hoja según sus medidas
+  const layout = calcularEstrategiaImpresion(anchoLam, altoLam, sep, margen); 
+  if (layout.totalHoja === 0) return alert("Las dimensiones de la lámina superan el tamaño del papel.");
+  
+  const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
+  let actual = 0;
+  
   while (actual < cantidad) {
-    if (actual > 0) doc.addPage(); aplicarFondoHoja(doc, fondo);
-    let enHoja = Math.min(layout.totalHoja, cantidad - actual); let areaW = layout.cols * anchoLam + (layout.cols - 1) * sep; let areaH = layout.rows * altoLam + (layout.rows - 1) * sep;
-    let kx = (layout.pageW - areaW) / 2; let ky = (layout.pageH - areaH) / 2;
-    for (let i = 0; i < enHoja; i++) {
-      let cH = i % layout.cols; let rH = Math.floor(i / layout.cols); let bx = kx + cH * (anchoLam + sep); let by = ky + rH * (layout.rows + sep);
-      let cW = anchoLam / colsGrid; let hC = altoLam / rowsGrid; let index = 0;
-      for (let f = 0; f < rowsGrid; f++) {
-        for (let c = 0; c < colsGrid; c++) { if (index < TOTAL_IMAGENES) { let x = bx + c * cW; let y = by + f * hC; doc.addImage(bancoImagenes[index], "JPEG", x, y, cW, hC); doc.setDrawColor(180); doc.setLineWidth(0.15); doc.rect(x, y, cW, hC, "S"); } index++; } }
-    }
+    if (actual > 0) doc.addPage(); 
+    aplicarFondoHoja(doc, fondo);
+    
+    // Cuántas láminas vamos a dibujar en ESTA hoja actual
+    let enHoja = Math.min(layout.totalHoja, cantidad - actual); 
+    
+    // Calcular el bloque total ocupado para poder centrarlo perfectamente en la hoja
+    let areaW = layout.cols * anchoLam + (layout.cols - 1) * sep; 
+    let areaH = layout.rows * altoLam + (layout.rows - 1) * sep; 
+    
+    let kx = (layout.pageW - areaW) / 2; 
+    let ky = (layout.pageH - areaH) / 2;
+    
+    for (let i = 0; i < enHoja; i++) { 
+      let cH = i % layout.cols;          // Columna de la lámina en la hoja
+      let rH = Math.floor(i / layout.cols); // Fila de la lámina en la hoja
+      
+      // 🎯 ¡CORRECCIÓN AQUÍ!: Multiplicar por el ALTO REAL de la lámina (altoLam), no por layout.rows
+      let bx = kx + cH * (anchoLam + sep); 
+      let by = ky + rH * (altoLam + sep); 
+      
+      let cW = anchoLam / colsGrid; 
+      let hC = altoLam / rowsGrid; 
+      
+      let index = 0; 
+      
+      // Dibujar las 54 cartas dentro de esta lámina específica
+      for (let f = 0; f < rowsGrid; f++) { 
+        for (let c = 0; c < colsGrid; c++) { 
+          if (index < TOTAL_IMAGENES) { 
+            let x = bx + c * cW; 
+            let y = by + f * hC; 
+            
+            // Renderizar la carta de la baraja
+            doc.addImage(bancoImagenes[index], "JPEG", x, y, cW, hC); 
+            
+            // Contorno fino de corte para cada carta
+            doc.setDrawColor(180); 
+            doc.setLineWidth(0.15); 
+            doc.rect(x, y, cW, hC, "S"); 
+          } 
+          index++; 
+        } 
+      } 
+    } 
+    // Avanzamos el contador general por la cantidad de láminas procesadas en esta hoja
     actual += enHoja;
   }
   doc.save("laminas_baraja_pro.pdf");
 }
-
-// Inicializar por primera vez al cargar
-document.addEventListener("DOMContentLoaded", () => { renderizarGridInteractivo(); });
