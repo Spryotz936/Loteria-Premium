@@ -314,7 +314,7 @@ function generarMotorOficial(cantidad, anchoTab, altoTab, espacioTab, fondo) {
 function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fondo) {
   const margenMinimo = 6; 
   const layout = calcularEstrategiaImpresion(anchoPocito, altoPocito, espacioTab, margenMinimo);
-  if (layout.totalHoja === 0) return alert("Medidas muy grandes.");
+  if (layout.totalHoja === 0) return alert("Medidas muy grandes para la hoja.");
   
   const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
   let contador = 0;
@@ -335,39 +335,39 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
     let ox = (layout.pageW - anchoBloqueTotal) / 2 + c * (anchoPocito + espacioTab); 
     let oy = (layout.pageH - altoBloqueTotal) / 2 + r * (altoPocito + espacioTab);
     
-    // 1. Separación matemática estricta de la baraja para este pocito
-    let baraja = mezclarMatriz([...bancoImagenes]); 
-    let grandes = baraja.slice(0, 30);      // 30 cartas que irán en formato grande
-    let dobles = baraja.slice(30, 42);     // 12 cartas que se repetirán 2 veces
-    let triples = baraja.slice(42, 54);    // 12 cartas que se repetirán 3 veces
+    // Forzamos números válidos en las coordenadas base
+    if (isNaN(ox) || isNaN(oy)) { ox = margenMinimo; oy = margenMinimo; }
     
-    // 2. Construcción del pool de cartas pequeñas (Total: 60 cartas)
+    // Separación estricta de la baraja para cumplir las reglas de los Pocitos
+    let baraja = mezclarMatriz([...bancoImagenes]); 
+    let grandes = baraja.slice(0, 30);      
+    let dobles = baraja.slice(30, 42);     
+    let triples = baraja.slice(42, 54);    
+    
     let pequenias = []; 
     dobles.forEach(img => pequenias.push(img, img)); 
     triples.forEach(img => pequenias.push(img, img, img)); 
     
-    // 3. Algoritmo de distribución balanceada sin bloqueos (Garantiza desorden único)
     let bloques = Array.from({ length: 30 }, () => []);
     let intentosDistribucion = 0;
     let exito = false;
 
-    while (!exito && intentosDistribucion < 10) {
-      // Reiniciamos los bloques para un nuevo intento limpio si se llega a trabar
+    // Algoritmo de reparto con validación estricta de colisiones
+    while (!exito && intentosDistribucion < 20) {
       for (let b = 0; b < 30; b++) bloques[b] = [];
       let poolCopia = mezclarMatriz([...pequenias]);
       exito = true;
 
       for (let img of poolCopia) {
         let acomodado = false;
-        // Buscamos un bloque que tenga espacio y cumpla las reglas de los Pocitos
         for (let b = 0; b < 30; b++) {
+          // REGLAS: Máximo 2 pequeñas por bloque, que no sea igual a la grande, y que no se repita en el pocito
           if (bloques[b].length < 2 && grandes[b] !== img && !bloques[b].includes(img)) {
             bloques[b].push(img);
             acomodado = true;
             break;
           }
         }
-        // Si una carta no cupo en ningún lado por colisión de reglas, repetimos la mezcla completa
         if (!acomodado) {
           exito = false;
           break;
@@ -376,19 +376,20 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
       intentosDistribucion++;
     }
 
-    // 4. Renderizado e impresión en el lienzo del PDF
     let cPocito = 5, rPocito = 6; 
     let bW = anchoPocito / cPocito; 
     let bH = altoPocito / rPocito;
     
     for (let i = 0; i < 30; i++) {
       let colCell = i % cPocito; 
-      let rowCell = Math.floor(i / cPocito); 
-      let x = ox + colCell * bW; 
-      let y = oy + rowCell * bH;
+      let rowCell = Math.floor(i / i % cPocito ? i % cPocito : cPocito); 
+      rowCell = Math.floor(i / cPocito);
       
-      let gImg = grandes[i]; 
-      // Si por una extrema casualidad matemática fallara la distribución, usamos cartas de respaldo seguras
+      let x = Number(ox + colCell * bW); 
+      let y = Number(oy + rowCell * bH);
+      
+      // Respaldos por si el algoritmo requirió un tiro de contingencia
+      let gImg = grandes[i] || bancoImagenes[0]; 
       let pImg1 = bloques[i][0] || baraja[(i + 1) % 54]; 
       let pImg2 = bloques[i][1] || baraja[(i + 2) % 54];
       
@@ -396,13 +397,10 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
       let wP = bW * 0.28; 
       let hP = bH / 2; 
       
-      // Dibujar la carta grande del bloque
       doc.addImage(gImg, "JPEG", x, y, wG, bH); 
-      // Dibujar las dos cartas pequeñas de la esquina (Pocitos)
       doc.addImage(pImg1, "JPEG", x + wG, y, wP, hP); 
       doc.addImage(pImg2, "JPEG", x + wG, y + hP, wP, hP);
       
-      // Marco de corte/separación técnica
       doc.setDrawColor(140); 
       doc.setLineWidth(0.15); 
       doc.rect(x, y, bW, bH, "S");
@@ -413,16 +411,16 @@ function generarMotorPocitos(cantidad, anchoPocito, altoPocito, espacioTab, fond
 }
 
 function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
+  // Buscamos dinámicamente si el grid configurado es 9x6 o 6x9
   const gridType = document.getElementById("grid").value; 
   let colsGrid = (gridType === "9x6") ? 9 : 6; 
   let rowsGrid = (gridType === "9x6") ? 6 : 9;
   
   const margen = 4;
-  const sep = 6; 
+  const sep = 6; // Separación fija entre láminas en la misma hoja
   
-  // Calculamos cuántas láminas completas caben por hoja según sus medidas
   const layout = calcularEstrategiaImpresion(anchoLam, altoLam, sep, margen); 
-  if (layout.totalHoja === 0) return alert("Las dimensiones de la lámina superan el tamaño del papel.");
+  if (layout.totalHoja === 0) return alert("Las dimensiones de la lámina exceden la hoja.");
   
   const doc = new jsPDF({ orientation: layout.orientacion, unit: "mm", format: "letter" }); 
   let actual = 0;
@@ -431,10 +429,7 @@ function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
     if (actual > 0) doc.addPage(); 
     aplicarFondoHoja(doc, fondo);
     
-    // Cuántas láminas vamos a dibujar en ESTA hoja actual
     let enHoja = Math.min(layout.totalHoja, cantidad - actual); 
-    
-    // Calcular el bloque total ocupado para poder centrarlo perfectamente en la hoja
     let areaW = layout.cols * anchoLam + (layout.cols - 1) * sep; 
     let areaH = layout.rows * altoLam + (layout.rows - 1) * sep; 
     
@@ -442,30 +437,28 @@ function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
     let ky = (layout.pageH - areaH) / 2;
     
     for (let i = 0; i < enHoja; i++) { 
-      let cH = i % layout.cols;          // Columna de la lámina en la hoja
-      let rH = Math.floor(i / layout.cols); // Fila de la lámina en la hoja
+      let cH = i % layout.cols;          
+      let rH = Math.floor(i / layout.cols); 
       
-      // 🎯 ¡CORRECCIÓN AQUÍ!: Multiplicar por el ALTO REAL de la lámina (altoLam), no por layout.rows
-      let bx = kx + cH * (anchoLam + sep); 
-      let by = ky + rH * (altoLam + sep); 
+      let bx = Number(kx + cH * (anchoLam + sep)); 
+      let by = Number(ky + rH * (altoLam + sep)); 
       
+      // RECALCULO DINÁMICO: El tamaño de cada carta es proporcional al tamaño de la lámina
       let cW = anchoLam / colsGrid; 
       let hC = altoLam / rowsGrid; 
       
       let index = 0; 
       
-      // Dibujar las 54 cartas dentro de esta lámina específica
       for (let f = 0; f < rowsGrid; f++) { 
         for (let c = 0; c < colsGrid; c++) { 
           if (index < TOTAL_IMAGENES) { 
             let x = bx + c * cW; 
             let y = by + f * hC; 
             
-            // Renderizar la carta de la baraja
+            // Dibujamos la carta escalada exactamente a su cuadrícula
             doc.addImage(bancoImagenes[index], "JPEG", x, y, cW, hC); 
             
-            // Contorno fino de corte para cada carta
-            doc.setDrawColor(180); 
+            doc.setDrawColor(140); 
             doc.setLineWidth(0.15); 
             doc.rect(x, y, cW, hC, "S"); 
           } 
@@ -473,7 +466,6 @@ function generarMotorLaminas(cantidad, anchoLam, altoLam, fondo) {
         } 
       } 
     } 
-    // Avanzamos el contador general por la cantidad de láminas procesadas en esta hoja
     actual += enHoja;
   }
   doc.save("laminas_baraja_pro.pdf");
