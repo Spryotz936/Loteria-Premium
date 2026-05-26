@@ -1,128 +1,346 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lotería PRO - Generador Universal Premium</title>
-  <style>
-    body { font-family: 'Segoe UI', Roboto, sans-serif; background: #eef2f3; color: #333; margin: 0; padding: 30px 10px; display: flex; flex-direction: column; align-items: center; }
-    .container { background: white; padding: 30px; border-radius: 14px; box-shadow: 0 5px 25px rgba(0,0,0,0.08); max-width: 500px; width: 100%; box-sizing: border-box; }
-    h2 { text-align: center; color: #2c3e50; margin-top: 0; margin-bottom: 5px; }
-    .tagline { text-align: center; color: #7f8c8d; font-size: 13px; margin-bottom: 25px; }
-    .form-group { margin-bottom: 16px; display: flex; flex-direction: column; }
-    label { font-weight: 600; margin-bottom: 6px; color: #4a5568; font-size: 14px; }
-    input, select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #f8fafc; outline: none; transition: border 0.2s; }
-    input:focus, select:focus { border-color: #3b82f6; background: #fff; }
-    .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
-    button { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
-    button:hover { background: #2563eb; }
-    .aviso { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 15px; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
-    .hidden { display: none !important; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Lotería Premium</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    /* Estilos del Panel de Posicionamiento Premium */
-    .panel-fijas { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 16px; }
-    .grid-interactivo { display: grid; gap: 5px; margin-top: 10px; justify-content: center; background: #e2e8f0; padding: 8px; border-radius: 6px; }
-    .celda-interactiva { width: 60px; height: 60px; background: white; border: 2px dashed #cbd5e1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; font-weight: bold; color: #64748b; transition: all 0.2s; text-align: center; padding: 2px; box-sizing: border-box; }
-    .celda-interactiva:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
-    .celda-interactiva.fijada { border-style: solid; border-color: #10b981; background: #ecfdf5; color: #065f46; }
-  </style>
+    <style>
+        :root {
+            --color-primario: #0284c7;
+            --color-primario-hover: #0369a1;
+            --color-fondo: #f8fafc;
+            --color-tarjeta: #ffffff;
+            --color-texto: #1e293b;
+            --color-borde: #cbd5e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .contenedor-app {
+            width: 100%;
+            max-width: 650px;
+            background: var(--color-tarjeta);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 30px;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            margin: 0 0 8px 0;
+            color: var(--color-primario);
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #e2e8f0;
+            margin: 20px 0;
+        }
+
+        .panel-control {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .seccion-ajustes {
+            background: #f1f5f9;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .seccion-ajustes h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #334155;
+            border-left: 4px solid var(--color-primario);
+            padding-left: 8px;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .grupo-control {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .grupo-control label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .grupo-control select, 
+        .grupo-control input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid var(--color-borde);
+            border-radius: 6px;
+            background-color: #fff;
+            font-size: 14px;
+            color: var(--color-texto);
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .grupo-control select:focus, 
+        .grupo-control input[type="number"]:focus {
+            border-color: var(--color-primario);
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+
+        .checkbox-control {
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .checkbox-control input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-control label {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sub-opciones {
+            background: #f8fafc;
+            border-style: dashed;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .contenedor-fijacion {
+            margin-top: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .contenedor-fijacion h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .instruccion {
+            margin: 0 0 12px 0;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .grid-interactivo {
+            display: grid;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .celda-interactiva {
+            width: 62px;
+            height: 62px;
+            background: #f1f5f9;
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .celda-interactiva:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+        }
+
+        .celda-interactiva.fijada {
+            background: #dcfce7;
+            border: 1px solid #22c55e;
+            color: #15803d;
+        }
+
+        .btn-principal {
+            background-color: var(--color-primario);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+
+        .btn-principal:hover {
+            background-color: var(--color-primario-hover);
+        }
+
+        .btn-secundario {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secundario:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+    </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>🎲 Lotería PRO</h2>
-  <div class="tagline">Generador comercial con posicionamiento inteligente</div>
+    <div class="contenedor-app">
+        <header>
+            <h1>Generador de Lotería Premium</h1>
+            <p>Crea tus archivos PDF listos para imprimir en alta calidad</p>
+        </header>
 
-  <div class="form-group">
-    <label>¿Qué tipo de lotería deseas buscar?</label>
-    <select id="modalidad" onchange="cambiarModalidad()">
-      <option value="oficial" selected>Lotería Oficial Tradicional</option>
-      <option value="pocito">Lotería de Pocitos (Variante)</option>
-      <option value="plantilla">Láminas de Baraja (54 Cartas en orden)</option>
-    </select>
-  </div>
+        <main class="panel-control">
+            <div class="grupo-control">
+                <label for="modalidad">Selecciona la Modalidad de Juego:</label>
+                <select id="modalidad" onchange="cambiarModalidad()">
+                    <option value="oficial">Lotería Oficial Tradicional</option>
+                    <option value="pocito">Lotería de Pocitos</option>
+                    <option value="plantilla">Láminas de Baraja Completa</option>
+                </select>
+            </div>
 
-  <div class="form-group">
-    <label id="lblCantidad">Cantidad de tablas (Máx. 100):</label>
-    <input type="number" id="cantidad" value="10" min="1" max="100">
-  </div>
+            <hr>
 
-  <div class="form-group">
-    <label id="lblAncho">Ancho deseado por pieza (cm):</label>
-    <input type="number" id="anchoCm" value="6" step="0.1">
-  </div>
+            <section class="seccion-ajustes">
+                <h3>Configuración del Documento</h3>
+                <div class="grid-inputs">
+                    <div class="grupo-control" id="grupoAncho">
+                        <label for="anchoCm">Ancho (cm):</label>
+                        <input type="number" id="anchoCm" value="14" step="0.1">
+                    </div>
+                    <div class="grupo-control" id="grupoAlto">
+                        <label for="altoCm">Alto (cm):</label>
+                        <input type="number" id="altoCm" value="20" step="0.1">
+                    </div>
+                    <div class="grupo-control" id="grupoEspacio">
+                        <label for="espacioCm">Margen/Espacio (cm):</label>
+                        <input type="number" id="espacioCm" value="0.5" step="0.1">
+                    </div>
+                    <div class="grupo-control" id="grupoFondo">
+                        <label for="fondo">Color de Fondo:</label>
+                        <select id="fondo">
+                            <option value="blanco">Blanco Estándar</option>
+                            <option value="gris">Gris Claro</option>
+                            <option value="negro">Negro Noche</option>
+                            <option value="rojo">Rojo Tradicional</option>
+                            <option value="azul">Azul Clásico</option>
+                        </select>
+                    </div>
+                </div>
 
-  <div class="form-group">
-    <label id="lblAlto">Alto deseado por pieza (cm):</label>
-    <input type="number" id="altoCm" value="6" step="0.1">
-  </div>
+                <div class="grupo-control checkbox-control" id="grupoBorde">
+                    <input type="checkbox" id="borde" checked>
+                    <label for="borde">Dibujar contorno negro perimetral</label>
+                </div>
 
-  <div class="form-group" id="grupoEspacio">
-    <label>Separación externa entre tablas (cm):</label>
-    <input type="number" id="espacioCm" value="0.5" step="0.1">
-  </div>
+                <div class="grupo-control">
+                    <label id="lblCantidad" for="cantidad">Cantidad de tablas / bloques:</label>
+                    <input type="number" id="cantidad" value="1" min="1">
+                </div>
+            </section>
 
-  <div id="opcionesOficial">
-    <div class="form-group">
-      <label>Tamaño de la cuadrícula:</label>
-      <select id="tamano" onchange="renderizarGridInteractivo()">
-        <option value="3">3x3</option>
-        <option value="4" selected>4x4 (Tradicional)</option>
-        <option value="5">5x5</option>
-        <option value="6">6x6</option>
-      </select>
+            <section id="opcionesOficial" class="seccion-ajustes sub-opciones">
+                <h3>Personalización de Tabla Tradicional</h3>
+                <div class="grid-inputs">
+                    <div class="grupo-control">
+                        <label for="tamano">Tamaño de Cuadrícula:</label>
+                        <select id="tamano" onchange="renderizarGridInteractivo()">
+                            <option value="3">3 x 3 (9 Cartas)</option>
+                            <option value="4" selected>4 x 4 (16 Cartas)</option>
+                            <option value="5">5 x 5 (25 Cartas)</option>
+                        </select>
+                    </div>
+                    <div class="grupo-control">
+                        <label for="forma">Forma de la Celda:</label>
+                        <select id="forma">
+                            <option value="cuadrado">Cuadrada Estándar</option>
+                            <option value="rectangulo">Estilo Rectángulo</option>
+                            <option value="circulo">Estilo Ficha (Circular)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="contenedor-fijacion">
+                    <h4>Fijar Cartas en la Tabla (Opcional, Máx. 10)</h4>
+                    <p class="instruccion">Haz clic en una casilla para fijar una carta específica en esa posición. Vuelve a hacer clic para liberarla.</p>
+                    <div id="gridInteractivo" class="grid-interactivo"></div>
+                    <button class="btn-secundario" onclick="limpiarCartasFijas()">Limpiar todas las fijas</button>
+                </div>
+            </section>
+
+            <section id="opcionesPlantilla" class="seccion-ajustes sub-opciones hidden">
+                <h3>Distribución de la Lámina</h3>
+                <div class="grupo-control">
+                    <label for="grid">Distribución de Filas y Columnas:</label>
+                    <select id="grid">
+                        <option value="9x6">9 Columnas x 6 Filas (Formato Acostado)</option>
+                        <option value="6x9">6 Columnas x 9 Filas (Formato Parado)</option>
+                    </select>
+                </div>
+            </section>
+
+            <button class="btn-principal" onclick="ejecutarGeneracionDirecta()">
+                🚀 Generar y Descargar Archivo PDF
+            </button>
+        </main>
     </div>
 
-    <div class="panel-fijas">
-      <label>🎯 Fijar Cartas en la Tabla (Opcional, Máx. 10):</label>
-      <p style="font-size: 11px; color:#64748b; margin: 4px 0 10px 0;">Haz clic en una celda para clavar una carta obligatoria en esa posición.</p>
-      <div id="gridInteractivo" class="grid-interactivo"></div>
-      <button type="button" onclick="limpiarCartasFijas()" style="background:#ef4444; padding:6px; font-size:12px; margin-top:8px;">Limpiar cartas fijas</button>
-    </div>
-
-    <div class="form-group">
-      <label>Forma de las celdas:</label>
-      <select id="forma">
-        <option value="cuadrado" selected>Cuadrado</option>
-        <option value="circulo">Círculo</option>
-        <option value="rectangulo">Rectángulo vertical</option>
-      </select>
-    </div>
-  </div>
-
-  <div id="opcionesPlantilla" class="hidden">
-    <div class="form-group">
-      <label>Distribución interna de la lámina:</label>
-      <select id="grid">
-        <option value="9x6" selected>9 x 6 (Predeterminado)</option>
-        <option value="6x9">6 x 9</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label>Estilo de fondo de la hoja:</label>
-    <select id="fondo">
-      <option value="blanco" selected>Blanco limpio</option>
-      <option value="gris">Gris técnico</option>
-      <option value="negro">Negro oscuro</option>
-      <option value="rojo">Rojo mexicano</option>
-      <option value="azul">Azul profundo</option>
-      <option value="neon">Efecto Neón</option>
-      <option value="textura">Textura Vintage</option>
-    </select>
-  </div>
-
-  <div class="checkbox-group" id="grupoBorde">
-    <input type="checkbox" id="borde" checked>
-    <label for="borde" style="cursor:pointer; font-weight:600; font-size:14px;">Dibujar contornos de corte</label>
-  </div>
-
-  <button onclick="ejecutarGeneracionDirecta()">Procesar y Descargar PDF</button>
-  <p class="aviso">Uso comercial público limitado de manera estricta a un máximo de 100 piezas por ejecución.</p>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
