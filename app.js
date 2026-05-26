@@ -1,29 +1,34 @@
 /**
- * SISTEMA PROFESIONAL DE GENERACIÓN DE LOTERÍA MEXICANA
- * Archivo: app.js
- * Motores Autónomos: Tradicional Variable, Pocitos 4x4 Estilizado, y Láminas de Baraja.
+ * SISTEMA PROFESIONAL DE GENERACIÓN DE LOTERÍA MEXICANA Premium
+ * Motores Autónomos e Independientes: 
+ * 1. Tradicional (54 cartas)
+ * 2. Pocitos Especial (90 imágenes organizadas en 54 tarjetas: 30 individuales, 12 dobles, 12 triples)
+ * 3. Láminas de Baraja Tradicional
  */
 
-const TOTAL_CARTAS_BARAJA = 54;
-// Genera las rutas relativas: cartas/1.jpg hasta cartas/54.jpg
-const imagenesBaraja = Array.from({ length: TOTAL_CARTAS_BARAJA }, (_, i) => `cartas/${i + 1}.jpg`);
+// --- CONFIGURACIÓN DE BARAJAS ---
+const TOTAL_TRADICIONAL = 54;
+const imagenesTradicional = Array.from({ length: TOTAL_TRADICIONAL }, (_, i) => `cartas/${i + 1}.jpg`);
 
-// Almacén de cartas fijas (Solo aplica en Lotería Tradicional)
+// Universo de Pocitos: 90 imágenes totales distribuidas en carpetas o nombres del 1 al 90
+const TOTAL_IMAGENES_POCITOS = 90;
+const imagenesPocitos = Array.from({ length: TOTAL_IMAGENES_POCITOS }, (_, i) => `pocitos/${i + 1}.jpg`);
+
+// Almacén de cartas fijas (EXCLUSIVO de Lotería Tradicional)
 let cartasFijas = [];
 
-// Inicialización del Grid Interactivo al cargar el DOM
 window.onload = function() {
   renderizarGridInteractivo();
 };
 
 /**
- * CONTROLADOR MAESTRO DE DISPARO
+ * CONTROLADOR MAESTRO DE DISPARO (Enruta y aísla los parámetros)
  */
 function ejecutarGeneracionDirecta() {
   const mod = document.getElementById("modalidad").value;
   const cant = parseInt(document.getElementById("cantidad").value) || 1;
   
-  // Conversiones directas de centímetros a milímetros para el motor jsPDF
+  // Conversión de cm a mm para jsPDF
   const w = Number(document.getElementById("anchoCm").value) * 10 || 140;
   const h = Number(document.getElementById("altoCm").value) * 10 || 200;
   const gap = Number(document.getElementById("espacioCm").value) * 10 || 5;
@@ -35,8 +40,8 @@ function ejecutarGeneracionDirecta() {
     generarMotorOficial(cant, w, h, gap, fondo, dimTamano, formaCelda);
   } 
   else if (mod === "pocito") {
-    // Aislado al 100%: Autocontrola su propia estructura interna sin heredar inputs extras
-    generarMotorPocitos(cant, w, h, gap, fondo);
+    // LLAMADA LIMPIA: No le envía tamaños ni formas de celda de la tradicional
+    generarMotorPocitosEspecial(cant, w, h, gap, fondo);
   } 
   else if (mod === "plantilla") {
     generarMotorLaminas(cant, w, h, fondo);
@@ -44,7 +49,7 @@ function ejecutarGeneracionDirecta() {
 }
 
 /**
- * INTERRUPTOR DINÁMICO DE VISUALIZACIÓN
+ * INTERRUPTOR DINÁMICO DE INTERFAZ (Oculta y muestra según el producto comercial)
  */
 function cambiarModalidad() {
   const mod = document.getElementById("modalidad").value;
@@ -66,13 +71,14 @@ function cambiarModalidad() {
     if(grupoAncho) grupoAncho.classList.remove("hidden");
     if(grupoAlto) grupoAlto.classList.remove("hidden");
     if(grupoFondo) grupoFondo.classList.remove("hidden");
-    if(grupoEspacio) grupoEspacio.classList.add("hidden"); // Oculto en láminas
-    if(grupoBorde) grupoBorde.classList.add("hidden");     // Oculto en láminas
+    if(grupoEspacio) grupoEspacio.classList.add("hidden");
+    if(grupoBorde) grupoBorde.classList.add("hidden");
     
     lblCant.innerText = "Cantidad de láminas a generar:";
   } 
   else if (mod === "pocito") {
-    opcOficial.classList.add("hidden"); // Desaparece la personalización e interactivo tradicional
+    // AISLAMIENTO TOTAL: Oculta la suite de personalización tradicional por completo
+    opcOficial.classList.add("hidden"); 
     opcPlantilla.classList.add("hidden");
     
     if(grupoAncho) grupoAncho.classList.remove("hidden");
@@ -84,7 +90,7 @@ function cambiarModalidad() {
     lblCant.innerText = "Cantidad de tablas de Pocitos:";
   } 
   else {
-    opcOficial.classList.remove("hidden"); // Habilita la suite de maquetación tradicional
+    opcOficial.classList.remove("hidden"); // Regresa el panel interactivo y los tamaños
     opcPlantilla.classList.add("hidden");
     
     if(grupoAncho) grupoAncho.classList.remove("hidden");
@@ -97,9 +103,6 @@ function cambiarModalidad() {
   }
 }
 
-/**
- * TRADUCTOR DE PALETAS DE COLOR RGB
- */
 function obtenerColorInyeccion(nombreColor) {
   const mapa = {
     blanco: [255, 255, 255],
@@ -112,7 +115,7 @@ function obtenerColorInyeccion(nombreColor) {
 }
 
 /**
- * 1. MOTOR TRADICIONAL VARIABLES
+ * 1. MOTOR TRADICIONAL VARIABLES (Usa la baraja de 54)
  */
 function generarMotorOficial(cantidad, tW, tH, gap, colorFondo, dimTamano, formaCelda) {
   const { jsPDF } = window.jspdf;
@@ -137,10 +140,9 @@ function generarMotorOficial(cantidad, tW, tH, gap, colorFondo, dimTamano, forma
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
     doc.rect(xCursor, yCursor, tW, tH, "F");
 
-    let pool = Array.from({ length: TOTAL_CARTAS_BARAJA }, (_, idx) => idx);
+    let pool = Array.from({ length: TOTAL_TRADICIONAL }, (_, idx) => idx);
     let seleccionadas = Array(dimTamano * dimTamano).fill(null);
 
-    // Inyección obligatoria de cartas fijas
     cartasFijas.forEach(fija => {
       if (fija.pos < seleccionadas.length) {
         seleccionadas[fija.pos] = fija.id;
@@ -148,7 +150,6 @@ function generarMotorOficial(cantidad, tW, tH, gap, colorFondo, dimTamano, forma
       }
     });
 
-    // Relleno aleatorio sin colisiones
     for (let pos = 0; pos < seleccionadas.length; pos++) {
       if (seleccionadas[pos] === null) {
         const rndIdx = Math.floor(Math.random() * pool.length);
@@ -163,7 +164,7 @@ function generarMotorOficial(cantidad, tW, tH, gap, colorFondo, dimTamano, forma
       for (let c = 0; c < dimTamano; c++) {
         const idx = r * dimTamano + c;
         const cX = xCursor + c * cW; const cY = yCursor + r * cH;
-        const imgPath = imagenesBaraja[seleccionadas[idx]];
+        const imgPath = imagenesTradicional[seleccionadas[idx]];
 
         if (formaCelda === "circulo") {
           doc.saveGraphicsState();
@@ -195,9 +196,9 @@ function generarMotorOficial(cantidad, tW, tH, gap, colorFondo, dimTamano, forma
 }
 
 /**
- * 2. MOTOR DE POCITOS (Formato Autónomo Estricto 4x4 Estilizado)
+ * 2. MOTOR DE POCITOS MATEMÁTICO REAL (Aislado, 90 imágenes, 54 tarjetas configuradas estructuralmente)
  */
-function generarMotorPocitos(cantidad, tW, tH, gap, colorFondo) {
+function generarMotorPocitosEspecial(cantidad, tW, tH, gap, colorFondo) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "mm", "letter");
   const dibujaBorde = document.getElementById("borde").checked;
@@ -217,56 +218,98 @@ function generarMotorPocitos(cantidad, tW, tH, gap, colorFondo) {
       }
     }
 
+    // Dibujar fondo de la tabla de Pocitos
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
     doc.rect(xCursor, yCursor, tW, tH, "F");
 
-    // Pocitos es invariablemente sub-matrices de 4x4 casillas
-    const bW = tW / 4; const bH = tH / 4;
+    // CONSTRUCCIÓN DE LA BARAJA MATEMÁTICA DE POCITOS (90 imágenes ordenadas en 54 objetos estructurales)
+    // Se crean dinámicamente para garantizar que cada tabla reciba una mezcla fresca sin repetir tarjetas físicas
+    let poolImagenes = Array.from({ length: TOTAL_IMAGENES_POCITOS }, (_, idx) => idx);
+    let cartasPocitosMazo = [];
 
-    let poolG = Array.from({ length: TOTAL_CARTAS_BARAJA }, (_, idx) => idx);
-    let poolP = Array.from({ length: TOTAL_CARTAS_BARAJA }, (_, idx) => idx);
+    // A. Crear las 30 Cartas Individuales (1 sola imagen grande)
+    for (let k = 0; k < 30; k++) {
+      const idxImg = Math.floor(Math.random() * poolImagenes.length);
+      cartasPocitosMazo.push({ tipo: 'individual', ids: [poolImagenes[idxImg]] });
+      poolImagenes.splice(idxImg, 1);
+    }
 
+    // B. Crear las 12 Cartas Dobles (2 imágenes acopladas)
+    for (let k = 0; k < 12; k++) {
+      const idx1 = Math.floor(Math.random() * poolImagenes.length);
+      const id1 = poolImagenes[idx1]; poolImagenes.splice(idx1, 1);
+      
+      const idx2 = Math.floor(Math.random() * poolImagenes.length);
+      const id2 = poolImagenes[idx2]; poolImagenes.splice(idx2, 1);
+
+      cartasPocitosMazo.push({ tipo: 'doble', ids: [id1, id2] });
+    }
+
+    // C. Crear las 12 Cartas Triples (3 imágenes acopladas)
+    for (let k = 0; k < 12; k++) {
+      const idx1 = Math.floor(Math.random() * poolImagenes.length);
+      const id1 = poolImagenes[idx1]; poolImagenes.splice(idx1, 1);
+      
+      const idx2 = Math.floor(Math.random() * poolImagenes.length);
+      const id2 = poolImagenes[idx2]; poolImagenes.splice(idx2, 1);
+
+      const idx3 = Math.floor(Math.random() * poolImagenes.length);
+      const id3 = poolImagenes[idx3]; poolImagenes.splice(idx3, 1);
+
+      cartasPocitosMazo.push({ tipo: 'triple', ids: [id1, id2, id3] });
+    }
+
+    // Mezclamos el mazo de Pocitos de 54 tarjetas armado
+    cartasPocitosMazo.sort(() => Math.random() - 0.5);
+
+    // Como son 54 cartas en el mazo mezclado, tomamos las primeras 16 para rellenar la cuadrícula obligatoria de 4x4
+    let seleccionadasTablero = cartasPocitosMazo.slice(0, 16);
+
+    const bW = tW / 4; const bH = tH / 4; // Sub-divisiones exactas de la tabla
+
+    let cuentaCasilla = 0;
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
         const x = xCursor + c * bW; const y = yCursor + r * bH;
+        const tarjeta = seleccionadasTablero[cuentaCasilla];
+        const margenInterno = 0.6;
 
-        // Selección Carta Principal (Grande)
-        const idxG = Math.floor(Math.random() * poolG.length);
-        const idGrande = poolG[idxG];
-        poolG.splice(idxG, 1);
+        if (tarjeta.tipo === 'individual') {
+          // 1 Imagen completa ocupando la celda rectangular
+          const imgPath = imagenesPocitos[tarjeta.ids[0]];
+          doc.addImage(imgPath, "JPEG", x + margenInterno, y + margenInterno, bW - (margenInterno * 2), bH - (margenInterno * 2));
+        } 
+        else if (tarjeta.tipo === 'doble') {
+          // 2 Imágenes divididas vertical u horizontalmente (diseño limpio a mitades de sub-celda)
+          const imgPath1 = imagenesPocitos[tarjeta.ids[0]];
+          const imgPath2 = imagenesPocitos[tarjeta.ids[1]];
+          const medioAncho = (bW / 2) - margenInterno;
 
-        // Bloqueo inmediato en celda para evitar duplicados idénticos en el sub-bloque
-        let poolP_Filtrado = poolP.filter(id => id !== idGrande);
+          doc.addImage(imgPath1, "JPEG", x + margenInterno, y + margenInterno, medioAncho, bH - (margenInterno * 2));
+          doc.addImage(imgPath2, "JPEG", x + (bW / 2) + (margenInterno / 2), y + margenInterno, medioAncho, bH - (margenInterno * 2));
+        } 
+        else if (tarjeta.tipo === 'triple') {
+          // 3 Imágenes estilizadas (1 Grande a la izquierda ocupando el 64%, y 2 pequeñas apiladas a la derecha)
+          const imgPathG = imagenesPocitos[tarjeta.ids[0]];
+          const imgPathP1 = imagenesPocitos[tarjeta.ids[1]];
+          const imgPathP2 = imagenesPocitos[tarjeta.ids[2]];
 
-        const idxP1 = Math.floor(Math.random() * poolP_Filtrado.length);
-        const idP1 = poolP_Filtrado[idxP1];
-        poolP_Filtrado.splice(idxP1, 1);
-        poolP = poolP.filter(id => id !== idP1);
+          let wG = (bW * 0.64) - (margenInterno * 2); 
+          let hG = bH - (margenInterno * 2);
+          let wP = (bW * 0.36) - (margenInterno * 2); 
+          let hP = (bH / 2) - (margenInterno * 1.5); 
 
-        const idxP2 = Math.floor(Math.random() * poolP_Filtrado.length);
-        const idP2 = poolP_Filtrado[idxP2];
-        poolP = poolP.filter(id => id !== idP2);
+          doc.addImage(imgPathG, "JPEG", x + margenInterno, y + margenInterno, wG, hG); 
+          let xPequenas = x + (bW * 0.64) + margenInterno;
+          doc.addImage(imgPathP1, "JPEG", xPequenas, y + margenInterno, wP, hP); 
+          doc.addImage(imgPathP2, "JPEG", xPequenas, y + (bH / 2) + (margenInterno / 2), wP, hP);
+        }
 
-        const gImg = imagenesBaraja[idGrande];
-        const pImg1 = imagenesBaraja[idP1];
-        const pImg2 = imagenesBaraja[idP2];
-
-        // PROPORCIÓN ESTILIZADA DE COMPACTACIÓN (Cartas esbeltas)
-        let margenInterno = 0.6;
-        let wG = (bW * 0.64) - (margenInterno * 2); 
-        let hG = bH - (margenInterno * 2);
-        let wP = (bW * 0.36) - (margenInterno * 2); 
-        let hP = (bH / 2) - (margenInterno * 1.5); 
-
-        // Inyección de componentes gráficos
-        doc.addImage(gImg, "JPEG", x + margenInterno, y + margenInterno, wG, hG); 
-        let xPequenas = x + (bW * 0.64) + margenInterno;
-        doc.addImage(pImg1, "JPEG", xPequenas, y + margenInterno, wP, hP); 
-        doc.addImage(pImg2, "JPEG", xPequenas, y + (bH / 2) + (margenInterno / 2), wP, hP);
-
-        // Delimitador técnico de celda
+        // Rejilla de división interna
         doc.setDrawColor(140); doc.setLineWidth(0.15);
         doc.rect(x, y, bW, bH, "S");
+
+        cuentaCasilla++;
       }
     }
 
@@ -278,17 +321,16 @@ function generarMotorPocitos(cantidad, tW, tH, gap, colorFondo) {
     xCursor += tW + gap;
     if (xCursor + tW > pW) { xCursor = gap; yCursor += tH + gap; }
   }
-  doc.save(`Loteria_Pocitos_${Date.now()}.pdf`);
+  doc.save(`Loteria_Pocitos_Especial_${Date.now()}.pdf`);
 }
 
 /**
- * 3. MOTOR DE LÁMINAS DE BARAJA COMPLETA
+ * 3. MOTOR DE LÁMINAS DE BARAJA COMPLETA (Tradicional)
  */
 function generarMotorLaminas(cantidad, lW, lH, colorFondo) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "mm", "letter");
   
-  // Apunta directamente a la ID correcta corregida del select
   const tipoGrid = document.getElementById("grid").value; 
   const rgb = obtenerColorInyeccion(colorFondo);
 
@@ -305,16 +347,16 @@ function generarMotorLaminas(cantidad, lW, lH, colorFondo) {
     doc.setFillColor(rgb[0], rgb[1], rgb[2]);
     doc.rect(margenX, margenY, lW, lH, "F");
 
-    let barajaMezclada = Array.from({ length: TOTAL_CARTAS_BARAJA }, (_, idx) => idx);
+    let barajaMezclada = Array.from({ length: TOTAL_TRADICIONAL }, (_, idx) => idx);
     barajaMezclada.sort(() => Math.random() - 0.5);
 
     let cuenta = 0;
     for (let r = 0; r < filas; r++) {
       for (let c = 0; c < columnas; c++) {
-        if (cuenta >= TOTAL_CARTAS_BARAJA) break;
+        if (cuenta >= TOTAL_TRADICIONAL) break;
 
         const cX = margenX + c * cW; const cY = margenY + r * cH;
-        const imgPath = imagenesBaraja[barajaMezclada[cuenta]];
+        const imgPath = imagenesTradicional[barajaMezclada[cuenta]];
 
         doc.addImage(imgPath, "JPEG", cX + 0.2, cY + 0.2, cW - 0.4, cH - 0.4);
 
